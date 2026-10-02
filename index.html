@@ -371,7 +371,7 @@
   var stage = document.getElementById("stage");
   for (var i = 7; i >= 0; i--) {
     var im = document.createElement("img");
-    im.src = "fotos/logo.png"; im.alt = ""; im.draggable = false;
+    im.src = "logo.png"; im.alt = ""; im.draggable = false;
     im.style.transform = "translateZ(" + (-i * 5) + "px)";
     im.style.filter = "brightness(" + (i === 0 ? 1 : Math.max(.12, .5 - i * .06)) + ")";
     stage.appendChild(im);
