@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DomiWeen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#000; --fg:#fff; --dim:rgba(255,255,255,.58); --line:rgba(255,255,255,.2); --acc:#dfe3ea; --ease:cubic-bezier(.2,.7,.2,1); }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html { scroll-behavior:smooth; background:var(--bg); }
+  body { background:var(--bg); color:var(--fg); font-family:"Space Grotesk",system-ui,sans-serif; min-height:100vh; padding:clamp(20px,4vw,48px); overflow-x:hidden; }
+  [hidden] { display:none !important; }
+  .num { font-variant-numeric:tabular-nums; }
+  input:focus-visible, button:focus-visible, .card:focus-visible { outline:3px solid var(--fg); outline-offset:3px; }
+
+  /* ---------- CONTAGEM ---------- */
+  #gate { max-width:980px; margin:0 auto; display:flex; flex-direction:column; gap:clamp(28px,5vw,48px); text-align:center; transition:opacity .6s var(--ease), transform .6s var(--ease); }
+  #gate.out { opacity:0; transform:scale(.97) translateY(-10px); }
+  .label { color:var(--dim); font-size:clamp(14px,2vw,18px); margin-bottom:10px; }
+  .clock { display:flex; justify-content:center; gap:clamp(8px,2.5vw,28px); flex-wrap:wrap; }
+  .unit { min-width:clamp(52px,11vw,110px); }
+  .unit b { display:block; font-weight:700; font-size:clamp(34px,8vw,84px); line-height:1; font-variant-numeric:tabular-nums; }
+  .unit span { display:block; margin-top:6px; color:var(--dim); font-size:clamp(11px,1.6vw,14px); }
+  .unit.ms b { color:var(--dim); }
+  .clock.small .unit b { font-size:clamp(28px,6vw,60px); }
+  .spoiler { border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:clamp(24px,4vw,40px) 0; }
+  .spoiler h2 { font-weight:500; font-size:clamp(20px,3.4vw,32px); margin-bottom:18px; }
+  .spoiler form { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .spoiler input { background:transparent; color:var(--fg); border:1px solid var(--fg); padding:14px 16px; font:inherit; font-size:18px; width:min(360px,100%); border-radius:0; transition:border-color .3s, box-shadow .3s; }
+  .spoiler input:focus { box-shadow:0 0 0 4px rgba(255,255,255,.12); }
+  .spoiler input::placeholder { color:var(--dim); }
+  .spoiler button { background:var(--fg); color:var(--bg); border:1px solid var(--fg); padding:14px 22px; font:inherit; font-weight:700; font-size:18px; cursor:pointer; transition:background .25s, color .25s, transform .15s; }
+  .spoiler button:hover { background:transparent; color:var(--fg); }
+  .spoiler button:active { transform:scale(.96); }
+  #msg { min-height:24px; margin-top:14px; color:var(--dim); }
+  .shake { animation:shake .35s; }
+  @keyframes shake { 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+  /* ---------- SITE ---------- */
+  #site { max-width:1040px; margin:0 auto; opacity:0; transition:opacity .8s var(--ease); }
+  #site.show { opacity:1; }
+  .glow { position:fixed; inset:-20% -10% auto -10%; height:70vh; pointer-events:none; z-index:-1;
+    background:radial-gradient(ellipse at 50% 0%, rgba(225,230,240,.16), transparent 65%); }
+  .topbar { position:sticky; top:0; z-index:10; margin:0 calc(-1 * clamp(20px,4vw,48px)); padding:12px clamp(20px,4vw,48px);
+    background:rgba(0,0,0,.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .logo { font-weight:700; font-size:20px; letter-spacing:-.01em; }
+  nav { display:flex; gap:6px; flex-wrap:wrap; }
+  nav button { background:transparent; color:var(--dim); border:1px solid transparent; padding:9px 14px; font:inherit; font-size:15px; cursor:pointer; border-radius:999px; transition:color .25s, background .25s, border-color .25s, transform .15s; }
+  nav button:hover { color:var(--fg); border-color:var(--line); }
+  nav button:active { transform:scale(.95); }
+  nav button[aria-selected="true"] { background:var(--fg); color:var(--bg); }
+
+  .hero { min-height:78vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:22px; padding:48px 0; }
+  .hero h1 { font-family:"Big Shoulders Display",Impact,sans-serif; font-size:clamp(72px,22vw,250px); font-weight:900; letter-spacing:-.01em; line-height:.9; display:flex; }
+  .hero .l { display:inline-block; opacity:0; transform:translateY(60%) rotate(6deg); padding:0 .01em;
+    background:linear-gradient(180deg,#fff 0%,#c9ced6 32%,#5c6068 50%,#e9ecf1 56%,#8b9099 82%,#fff 100%); background-size:100% 220%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent; }
+  #site.show .hero .l { animation:letra .9s var(--ease) forwards, brilho 5s ease-in-out infinite; animation-delay:calc(var(--i) * 70ms + .3s), calc(var(--i) * 140ms + 1.4s); }
+  @keyframes brilho { 0%,100%{background-position:0 0} 50%{background-position:0 100%} }
+  @keyframes letra { to { opacity:1; transform:none; } }
+  .hero p.sub { font-size:clamp(17px,2.6vw,24px); color:var(--dim); opacity:0; }
+  #site.show .hero p.sub { animation:fade 1s var(--ease) 1.3s forwards; }
+  .hero .faltam { opacity:0; }
+  #site.show .hero .faltam { animation:fade 1s var(--ease) 1.6s forwards; }
+  .scroll { margin-top:10px; color:var(--dim); font-size:14px; opacity:0; }
+  #site.show .scroll { animation:fade 1s var(--ease) 2s forwards, bob 2s ease-in-out 3s infinite; }
+  @keyframes fade { to { opacity:1; } }
+  @keyframes bob { 50% { transform:translateY(6px); } }
+
+  .tab { padding:clamp(40px,8vw,90px) 0; }
+  .tab h2 { font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(40px,7vw,76px); line-height:1; margin:clamp(40px,7vw,80px) 0 22px; }
+  .tab h2:first-child { margin-top:0; }
+  .tab p.t { font-size:clamp(17px,2.2vw,21px); line-height:1.65; color:rgba(255,255,255,.85); max-width:62ch; margin-bottom:18px; }
+  .todo { color:var(--dim); font-style:italic; font-size:15px; }
+  .rv { opacity:0; transform:translateY(34px); transition:opacity .8s var(--ease), transform .8s var(--ease); transition-delay:var(--d,0ms); }
+  .rv.on { opacity:1; transform:none; }
+
+
+  /* ---------- LOGO 3D ---------- */
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+  .logo3d { position:relative; perspective:1100px; width:min(100%,920px); margin:0 auto; opacity:0; transform:scale(.9); }
+  #site.show .logo3d { animation:entra 1.6s var(--ease) .2s forwards; }
+  @keyframes entra { to { opacity:1; transform:none; } }
+  .logo3d::before { content:""; position:absolute; inset:-30% -10%; background:radial-gradient(ellipse at 50% 55%, rgba(225,230,240,.2), transparent 62%); pointer-events:none; }
+  .stage { position:relative; aspect-ratio:1100/254; transform-style:preserve-3d; will-change:transform; }
+  .stage img { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; user-select:none; }
+  .hero .botoes { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; opacity:0; }
+  #site.show .hero .botoes { animation:fade 1s var(--ease) 1.8s forwards; }
+  .btn { display:inline-block; text-align:center; background:var(--fg); color:var(--bg); padding:15px 26px; border-radius:999px; font-weight:700; font-size:18px; text-decoration:none; border:1px solid var(--fg); transition:transform .25s var(--ease), background .25s, color .25s, box-shadow .25s; }
+  .btn:hover { transform:translateY(-3px); box-shadow:0 12px 30px -10px rgba(255,255,255,.45); }
+  .btn:active { transform:scale(.96); }
+  .btn.ghost { background:transparent; color:var(--fg); border-color:var(--line); }
+  .btn.ghost:hover { border-color:var(--fg); }
+  .fixa { position:fixed; left:50%; bottom:18px; translate:-50% 0; z-index:20; box-shadow:0 10px 40px rgba(0,0,0,.7); }
+  body { padding-bottom:90px; }
+
+  .feats { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; margin-top:26px; }
+  .feat { border:1px solid var(--line); border-radius:22px; padding:28px; background:linear-gradient(160deg,rgba(255,255,255,.07),transparent 60%); transition:transform .4s var(--ease), border-color .3s; }
+  .feat:hover { transform:translateY(-6px); border-color:var(--acc); }
+  .feat h3 { font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(32px,4.4vw,46px); line-height:1; margin-bottom:10px; }
+  .feat p { color:rgba(255,255,255,.8); line-height:1.6; font-size:17px; }
+
+  .cta { margin-top:clamp(60px,9vw,100px); border:1px solid var(--line); border-radius:28px; padding:clamp(24px,5vw,56px); text-align:center; background:radial-gradient(ellipse at 50% 0%, rgba(225,230,240,.15), transparent 70%); }
+  .cta h2 { margin-top:0 !important; }
+  .cta p.t { margin-inline:auto; }
+  .paths { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:16px; margin-top:26px; text-align:left; }
+  .path { border:1px solid var(--line); border-radius:20px; padding:26px; display:flex; flex-direction:column; gap:14px; justify-content:space-between; }
+  .path h3 { font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:34px; line-height:1; }
+  .path p { color:rgba(255,255,255,.8); line-height:1.55; font-size:17px; }
+
+  /* ---------- SOBRE ---------- */
+  .marquee { overflow:hidden; border-block:1px solid var(--line); margin:10px calc(-1 * clamp(20px,4vw,48px)) 0; padding:14px 0; }
+  .trk { display:flex; width:max-content; animation:corre 28s linear infinite; }
+  .trk span { font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(28px,5vw,48px); padding-right:.7em; white-space:nowrap;
+    background:linear-gradient(180deg,#fff,#7d838c 55%,#e6e9ee); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  @keyframes corre { to { transform:translateX(-50%); } }
+  .marquee + h2 { margin-top:clamp(50px,8vw,90px); }
+  .tab p.big { font-size:clamp(22px,3.4vw,34px); line-height:1.3; color:var(--fg); font-weight:500; max-width:30ch; max-width:36ch; }
+  .pilares { margin:26px 0 10px; border-top:1px solid var(--line); }
+  .pilar { border-bottom:1px solid var(--line); }
+  .pilar summary { list-style:none; cursor:pointer; display:flex; align-items:center; gap:18px; padding:22px 4px; font-size:clamp(18px,2.6vw,26px); font-weight:700; transition:padding .3s var(--ease), color .3s; }
+  .pilar summary::-webkit-details-marker { display:none; }
+  .pilar summary i { font-style:normal; font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(34px,5vw,54px); color:var(--dim); min-width:1.1em; transition:color .3s; }
+  .pilar summary::after { content:"+"; margin-left:auto; font-size:32px; font-weight:400; color:var(--dim); transition:transform .4s var(--ease); }
+  .pilar:hover summary { padding-left:14px; }
+  .pilar[open] summary i, .pilar:hover summary i { color:var(--fg); }
+  .pilar[open] summary::after { transform:rotate(45deg); }
+  .pilar p { padding:0 4px 26px calc(1.1em + 22px + 4px); font-size:clamp(16px,2vw,19px); line-height:1.65; color:rgba(255,255,255,.82); max-width:70ch; animation:abre .5s var(--ease); }
+  @keyframes abre { from { opacity:0; transform:translateY(-10px); } }
+  @media (max-width:560px){ .pilar p { padding-left:4px; } }
+  .final { font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(34px,6.5vw,72px); line-height:1.02; margin:clamp(50px,8vw,90px) 0 10px; max-width:20ch;
+    background:linear-gradient(180deg,#fff 0%,#aeb3bb 50%,#fff 100%); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .links { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-top:36px; }
+  .link { text-align:left; background:transparent; color:var(--fg); border:1px solid var(--line); padding:22px; font:inherit; cursor:pointer; border-radius:18px; transition:border-color .3s, background .3s, transform .3s var(--ease); }
+  .link:hover { border-color:var(--acc); background:rgba(225,230,240,.08); transform:translateY(-4px); }
+  .link strong { display:block; font-size:22px; margin-bottom:6px; }
+  .link span { color:var(--dim); font-size:15px; }
+
+  /* ---------- FOTOS COM NOME NO HOVER ---------- */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr)); gap:16px; margin-top:30px; }
+  .card { position:relative; aspect-ratio:3/4; border-radius:20px; overflow:hidden; cursor:pointer; background:#141414; border:1px solid var(--line);
+    transition:transform .5s var(--ease), border-color .3s, box-shadow .5s var(--ease); }
+  .card .ph { position:absolute; inset:0; display:grid; place-items:center; font-family:"Big Shoulders Display",Impact,sans-serif; font-weight:900; font-size:clamp(100px,16vw,150px); color:#16181c;
+    text-shadow:0 2px 0 rgba(255,255,255,.4), 0 -1px 0 rgba(0,0,0,.35);
+    background:linear-gradient(135deg,#6a6f77 0%,#c4c9d1 22%,#7a7f87 45%,#d5d9df 62%,#5a5f67 85%,#9ca1a9 100%); background-size:240% 240%; background-position:0 0; transition:background-position 1s var(--ease); }
+  .card:hover .ph, .card:focus-visible .ph, .card.open .ph { background-position:100% 100%; }
+  .card img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .8s var(--ease), filter .5s; }
+  .card .nome { position:absolute; inset:auto 0 0 0; padding:60px 18px 18px; font-size:22px; font-weight:700;
+    background:linear-gradient(transparent, rgba(0,0,0,.92)); opacity:0; transform:translateY(24px); transition:opacity .4s var(--ease), transform .5s var(--ease); }
+  .card .nome small { display:block; font-weight:400; font-size:14px; color:var(--dim); margin-top:2px; }
+  .card:hover, .card:focus-visible, .card.open { border-color:var(--acc); box-shadow:0 18px 50px -18px rgba(225,230,240,.5); transform:translateY(-6px); }
+  .card:hover img, .card.open img, .card:focus-visible img { transform:scale(1.08); filter:brightness(.7); }
+  .card:hover .nome, .card:focus-visible .nome, .card.open .nome { opacity:1; transform:none; }
+  .dica { display:none; color:var(--dim); font-size:14px; margin-top:14px; }
+  @media (hover:none) { .dica { display:block; } }
+
+  .subnav { display:inline-flex; gap:6px; padding:5px; border:1px solid var(--line); border-radius:999px; margin-bottom:26px; }
+  .subnav button { background:transparent; color:var(--dim); border:none; padding:11px 20px; font:inherit; font-size:16px; border-radius:999px; cursor:pointer; transition:background .3s var(--ease), color .3s, transform .15s; }
+  .subnav button:hover { color:var(--fg); }
+  .subnav button:active { transform:scale(.95); }
+  .subnav button[aria-selected="true"] { background:var(--fg); color:var(--bg); }
+  .info { display:grid; gap:14px; max-width:520px; margin-top:24px; }
+  .info div { border:1px solid var(--line); border-radius:16px; padding:18px 20px; font-size:19px; }
+  .info a { color:var(--fg); }
+  .info small { display:block; color:var(--dim); font-size:14px; margin-bottom:4px; }
+  .reset { margin:60px 0 20px; background:none; border:none; color:var(--dim); font:inherit; font-size:13px; cursor:pointer; text-decoration:underline; }
+
+  @media (prefers-reduced-motion:reduce){
+    html { scroll-behavior:auto; }
+    *,*::before,*::after { animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ CONTAGEM ============ -->
+<main id="gate">
+  <section>
+    <p class="label">Falta para hoje às 20h</p>
+    <div class="clock" id="c1"></div>
+  </section>
+  <section>
+    <p class="label">Falta para o Domiween, dia 7/11</p>
+    <div class="clock small" id="c2"></div>
+  </section>
+  <section class="spoiler">
+    <h2>Ta ansioso de mais e quer um spoiler?</h2>
+    <form id="form" autocomplete="off">
+      <input id="answer" type="text" placeholder="se tem domi?" aria-label="se tem domi?">
+      <button type="submit">Responder</button>
+    </form>
+    <p id="msg" role="status"></p>
+  </section>
+</main>
+
+<!-- ============ SITE DA FESTA ============ -->
+<div id="site" hidden>
+  <div class="glow"></div>
+  <div class="topbar">
+    <div class="logo">DomiWeen</div>
+    <nav role="tablist" id="tabs">
+      <button role="tab" aria-selected="true" data-tab="sobre">Sobre</button>
+      <button role="tab" aria-selected="false" data-tab="openbar">Open bar</button>
+      <button role="tab" aria-selected="false" data-tab="atracoes">Atrações</button>
+      <button role="tab" aria-selected="false" data-tab="info">Local e horário</button>
+    </nav>
+  </div>
+
+  <!-- SOBRE -->
+  <section class="tab" id="tab-sobre">
+    <div class="hero">
+      <div class="logo3d" id="logo3d" role="img" aria-label="DomiWeen"><div class="stage" id="stage"></div></div>
+      <h1 class="sr">DomiWeen</h1>
+      <p class="sub">7 de novembro. Open bar, R&amp;B, Trap, Hip-Hop e Funk.</p>
+      <div class="faltam">
+        <p class="label">Falta para o dia 7/11</p>
+        <div class="clock small" id="c3"></div>
+      </div>
+      <div class="botoes">
+        <a class="btn" data-wa="geral">Quero ir</a>
+        <a class="btn ghost" href="#oque">Ver o que rola</a>
+      </div>
+      <div class="scroll">role para baixo ↓</div>
+    </div>
+
+    <div class="marquee" aria-hidden="true"><div class="trk" id="trk"></div></div>
+
+    <h2 class="rv" id="oque">O que te espera</h2>
+    <div class="feats">
+      <div class="feat rv"><h3>Open bar</h3><p>Chega, pede e curte. A bebida rola solta e você não fica fazendo conta de drink a noite toda.</p></div>
+      <div class="feat rv" style="--d:100ms"><h3>Som pesado</h3><p>R&amp;B, Trap, Hip-Hop e Funk. O set é montado com o que vocês pediram, de Drake, Frank Ocean e PartyNextDoor ao funk que não deixa a pista parar.</p></div>
+      <div class="feat rv" style="--d:200ms"><h3>Visual de outro mundo</h3><p>Estética cromada, urbana e industrial, com projeção mapeada no ambiente e adesivo tático da equipe na pista. Dá pra reconhecer um rolê Domi de longe.</p></div>
+      <div class="feat rv" style="--d:300ms"><h3>Gente do rolê</h3><p>Aqui você não é só mais um ingresso. É uma comunidade, e você faz parte de uma noite exclusiva.</p></div>
+    </div>
+
+    <h2 class="rv">Feito por quem tá na pista</h2>
+    <p class="t big rv">O Domi nasceu entre amigos que se conheceram no colégio e queriam uma festa de verdade por aqui.</p>
+    <p class="t rv">A gente testou em novembro de 2025, perguntou o que vocês queriam ouvir, beber e viver, e montou o DomiWeen em cima disso. A cada edição a gente erra, ajusta e melhora, porque o objetivo nunca foi fazer só mais uma festa.</p>
+    <p class="final rv">A gente não vende só um ingresso. A gente constrói uma noite em que você faz parte.</p>
+
+    <div class="links">
+      <button class="link rv" data-go="openbar"><strong>Open bar</strong><span>Veja o que vai estar liberado</span></button>
+      <button class="link rv" data-go="atracoes" style="--d:100ms"><strong>Atrações</strong><span>Quem vai animar a noite</span></button>
+      <button class="link rv" data-go="info" style="--d:200ms"><strong>Local e horário</strong><span>7 de novembro, das 21h às 5h</span></button>
+    </div>
+
+    <div class="cta rv">
+      <h2>Bora garantir o seu?</h2>
+      <p class="t">É dia 7/11. Escolhe como você quer entrar:</p>
+      <div class="paths">
+        <div class="path"><div><h3>Já tá com a gente</h3><p>Já foi num Domi ou já tá na nossa lista? Chama no WhatsApp e garante seu lugar primeiro.</p></div><a class="btn" data-wa="veterano">Garantir meu lugar</a></div>
+        <div class="path"><div><h3>Primeira vez?</h3><p>Entra na lista e recebe em primeira mão o lote, o line-up, o local e as novidades da festa.</p></div><a class="btn ghost" data-wa="novo">Entrar na lista</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPEN BAR -->
+  <section class="tab" id="tab-openbar" hidden>
+    <h2 class="rv">Open bar</h2>
+    <p class="t rv">Passe o mouse (ou toque) em cada foto para ver o nome.</p>
+    <div class="grid" id="grid-openbar"></div>
+    <p class="dica">Toque na foto para ver o nome.</p>
+  </section>
+
+  <!-- ATRAÇÕES -->
+  <section class="tab" id="tab-atracoes" hidden>
+    <h2 class="rv">Atrações</h2>
+    <div class="subnav rv" id="subnav" role="tablist">
+      <button role="tab" aria-selected="true" data-sub="djs">DJs e MCs</button>
+      <button role="tab" aria-selected="false" data-sub="jogos">Atrações da festa</button>
+    </div>
+    <div id="sub-djs">
+      <p class="t rv">Passe o mouse (ou toque) em cada foto para ver quem é.</p>
+      <div class="grid" id="grid-djs"></div>
+    </div>
+    <div id="sub-jogos" hidden>
+      <p class="t rv">Passe o mouse (ou toque) em cada foto para ver o que rola.</p>
+      <div class="grid" id="grid-jogos"></div>
+    </div>
+    <p class="dica">Toque na foto para ver o nome.</p>
+  </section>
+
+  <!-- INFO -->
+  <section class="tab" id="tab-info" hidden>
+    <h2 class="rv">Local e horário</h2>
+    <div class="info">
+      <div class="rv"><small>Data</small>7 de novembro</div>
+      <div class="rv" style="--d:100ms"><small>Horário</small>21h às 5h</div>
+      <div class="rv" style="--d:200ms"><small>Local</small>A definir (veja o motivo abaixo)</div>
+      <div class="rv" style="--d:300ms"><small>Ingressos</small><span id="ing">Em breve no Sympla</span></div>
+    </div>
+
+    <h2 class="rv">Por que o local ainda não foi definido?</h2>
+    <p class="t big rv">Porque a gente escolhe o espaço pelo tamanho da galera, e ainda não sabemos quantas pessoas vão vir.</p>
+    <p class="t rv">O número de pessoas muda tudo. Um lugar pequeno demais lota e deixa gente de fora. Um lugar grande demais esvazia a pista e a noite perde o clima. O local certo depende da demanda real, e ela ainda está se mostrando.</p>
+    <p class="t rv">Por isso, na primeira semana, optamos por deixar o local como a definir. A gente prefere acompanhar quantos ingressos saem e quantas pessoas entram na lista para escolher o espaço certo, em vez de chutar e errar. O horário já está fechado: das 21h às 5h.</p>
+    <p class="t rv">Assim que o número de pessoas ficar claro, o local é anunciado aqui no site e no WhatsApp da lista. Quem está na lista fica sabendo primeiro.</p>
+    <div class="rv"><a class="btn" data-wa="novo">Entrar na lista</a></div>
+  </section>
+
+  <button class="reset" id="reset">Voltar para a contagem</button>
+</div>
+
+<script>
+(function () {
+  /* ====== CONFIGURAÇÃO (edite aqui) ====== */
+  var ALVO_HOJE  = new Date("2026-10-02T20:00:00-03:00"); // libera o site
+  var ALVO_FESTA = new Date("2026-11-07T00:00:00-03:00"); // contagem da festa
+  var RESPOSTA   = "temopenbar";
+
+  // Número do WhatsApp da festa: 55 + DDD + número, só dígitos (ex: 5511999999999)
+  var WHATSAPP = "5511999999999";
+  // >>> LINK DO SYMPLA: cole aqui entre as aspas, ex: "https://www.sympla.com.br/evento/..."
+  // Enquanto estiver vazio, os botões levam ao WhatsApp. Com o link, "Quero ir" e
+  // "Garantir meu lugar" viram "Comprar ingresso" e abrem o Sympla.
+  var LINK_INGRESSO = "";
+
+  // ===== PASTA DAS IMAGENS =====
+  // "" = as imagens estão soltas na raiz do repositório, junto do index.html (como está agora).
+  // Se um dia criar uma pasta chamada fotos, troque por "fotos/".
+  var PASTA = "";
+
+  // ===== COMO ADICIONAR OU TROCAR CARDS =====
+  // Cada linha é um card:  ["Nome", "Descrição", "arquivo.jpg"],  (só o nome do arquivo, sem pasta)
+  // - Para ADICIONAR: copie uma linha e cole embaixo (não esqueça da vírgula no fim).
+  // - Para REMOVER: apague a linha.
+  // - A foto é opcional. Sem foto, aparece o card prateado com a inicial do nome.
+  // - ["???", "Em breve"] é o card misterioso (prateado com "?").
+  var OPENBAR = [
+    ["???", "Em breve"],
+    ["???", "Em breve"],
+    ["???", "Em breve"],
+    ["???", "Em breve"]
+  ];
+  var DJS = [
+    ["DJ Maverick", "DJ", "maverick.jpg"],
+    ["???", "Em breve"],
+    ["???", "Em breve"],
+    ["???", "Em breve"]
+  ];
+  var ATRACOES = [
+    ["???", "Em breve"],
+    ["???", "Em breve"],
+    ["???", "Em breve"],
+    ["???", "Em breve"]
+  ];
+  /* ======================================= */
+
+  var gate = document.getElementById("gate");
+  var site = document.getElementById("site");
+  function pad(n, l) { n = String(n); while (n.length < l) n = "0" + n; return n; }
+
+  /* ---- contagens ---- */
+  function montar(el) {
+    el.innerHTML = ["dias","horas","min","seg","ms"].map(function (n) {
+      return '<div class="unit' + (n === "ms" ? " ms" : "") + '"><b class="num">00</b><span>' + n + '</span></div>';
+    }).join("");
+    return Array.prototype.slice.call(el.querySelectorAll("b"));
+  }
+  function atualizar(els, alvo) {
+    var diff = Math.max(0, alvo - Date.now());
+    els[0].textContent = pad(Math.floor(diff / 864e5), 2);
+    els[1].textContent = pad(Math.floor(diff % 864e5 / 36e5), 2);
+    els[2].textContent = pad(Math.floor(diff % 36e5 / 6e4), 2);
+    els[3].textContent = pad(Math.floor(diff % 6e4 / 1e3), 2);
+    els[4].textContent = pad(Math.floor(diff % 1e3), 3);
+    return diff;
+  }
+
+  /* ---- logo 3D ---- */
+  var stage = document.getElementById("stage");
+  for (var i = 7; i >= 0; i--) {
+    var im = document.createElement("img");
+    im.src = PASTA + "logo.png"; im.alt = ""; im.draggable = false;
+    im.style.transform = "translateZ(" + (-i * 5) + "px)";
+    im.style.filter = "brightness(" + (i === 0 ? 1 : Math.max(.12, .5 - i * .06)) + ")";
+    stage.appendChild(im);
+  }
+  var hero = document.querySelector(".hero");
+  var tx = 0, ty = 0, cx = 0, cy = 0, ativo = false;
+  var parado = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  hero.addEventListener("pointermove", function (e) {
+    var r = hero.getBoundingClientRect();
+    ty = ((e.clientX - r.left) / r.width - .5) * 40;
+    tx = -((e.clientY - r.top) / r.height - .5) * 26;
+    ativo = true;
+  });
+  hero.addEventListener("pointerleave", function () { ativo = false; });
+  function girar(t) {
+    if (!ativo) { ty = Math.sin(t / 1700) * 16; tx = Math.cos(t / 2300) * 7; }
+    cx += (tx - cx) * .08; cy += (ty - cy) * .08;
+    stage.style.transform = "rotateX(" + cx.toFixed(2) + "deg) rotateY(" + cy.toFixed(2) + "deg)";
+    requestAnimationFrame(girar);
+  }
+  if (!parado) requestAnimationFrame(girar);
+
+  /* ---- botões do WhatsApp ---- */
+  var msgs = {
+    geral: "Fala! Quero ir no DomiWeen dia 7/11. Como garanto o meu?",
+    veterano: "Fala! Já fui num Domi (ou já tô na lista) e quero garantir meu lugar no DomiWeen dia 7/11.",
+    novo: "Fala! Nunca fui num Domi, mas quero entrar na lista do DomiWeen dia 7/11."
+  };
+  document.querySelectorAll("[data-wa]").forEach(function (a) {
+    var k = a.dataset.wa;
+    a.href = (LINK_INGRESSO && k !== "novo") ? LINK_INGRESSO : "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msgs[k]);
+    a.target = "_blank"; a.rel = "noopener";
+    if (LINK_INGRESSO && k !== "novo") a.textContent = "Comprar ingresso";
+  });
+  var ing = document.getElementById("ing");
+  if (ing && LINK_INGRESSO) { ing.innerHTML = '<a href="' + LINK_INGRESSO + '" target="_blank" rel="noopener">Comprar no Sympla</a>'; }
+
+  /* ---- faixa de gêneros ---- */
+  var faixa = ["R&B","Trap","Hip-Hop","Funk","Open bar"].map(function (t) { return "<span>" + t + " ✦</span>"; }).join("");
+  document.getElementById("trk").innerHTML = faixa + faixa + faixa + faixa;
+
+  /* ---- cards com foto ---- */
+  function cards(id, lista) {
+    var grid = document.getElementById(id);
+    lista.forEach(function (a, i) {
+      var it = { nome: a[0], desc: a[1] || "", img: a[2] ? PASTA + a[2] : "" };
+      var c = document.createElement("div");
+      c.className = "card rv"; c.tabIndex = 0; c.style.setProperty("--d", (i * 90) + "ms"); c.style.setProperty("--h", (i * 47 + 20) % 360);
+      c.innerHTML = '<div class="ph">' + (it.nome === "???" ? "?" : it.nome.charAt(0)) + '</div>' + (it.img ? '<img alt="' + it.nome + '" src="' + it.img + '" loading="lazy">' : '') +
+                    '<div class="nome">' + it.nome + '<small>' + it.desc + '</small></div>';
+      var foto = c.querySelector("img");
+      if (foto) foto.addEventListener("error", function () { this.remove(); });
+      c.addEventListener("click", function () {
+        var abre = !c.classList.contains("open");
+        grid.querySelectorAll(".open").forEach(function (o) { o.classList.remove("open"); });
+        if (abre) c.classList.add("open");
+      });
+      c.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); c.click(); } });
+      grid.appendChild(c);
+    });
+  }
+  cards("grid-openbar", OPENBAR);
+  cards("grid-djs", DJS);
+  cards("grid-jogos", ATRACOES);
+
+  /* ---- animação ao rolar ---- */
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) { e.target.classList.toggle("on", e.isIntersecting); });
+  }, { threshold: .15, rootMargin: "0px 0px -6% 0px" });
+  document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+
+  /* ---- abas ---- */
+  var abas = document.querySelectorAll("#tabs button");
+  function ir(nome) {
+    abas.forEach(function (b) { b.setAttribute("aria-selected", b.dataset.tab === nome ? "true" : "false"); });
+    document.querySelectorAll(".tab").forEach(function (t) {
+      var alvo = t.id === "tab-" + nome;
+      if (!alvo) t.querySelectorAll(".rv.on").forEach(function (r) { r.classList.remove("on"); });
+      t.hidden = !alvo;
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  abas.forEach(function (b) { b.addEventListener("click", function () { ir(b.dataset.tab); }); });
+  document.querySelectorAll("[data-go]").forEach(function (b) { b.addEventListener("click", function () { ir(b.dataset.go); }); });
+
+  /* ---- sub-abas das atrações ---- */
+  var subs = document.querySelectorAll("#subnav button");
+  subs.forEach(function (b) {
+    b.addEventListener("click", function () {
+      subs.forEach(function (x) { x.setAttribute("aria-selected", x === b ? "true" : "false"); });
+      document.getElementById("sub-djs").hidden = b.dataset.sub !== "djs";
+      document.getElementById("sub-jogos").hidden = b.dataset.sub !== "jogos";
+    });
+  });
+
+  /* ---- liberar site ---- */
+  function liberar(salvar, animar) {
+    function mostrar() {
+      gate.hidden = true; site.hidden = false;
+      window.scrollTo(0, 0);
+      requestAnimationFrame(function () { requestAnimationFrame(function () { site.classList.add("show"); }); });
+    }
+    if (animar) { gate.classList.add("out"); setTimeout(mostrar, 600); } else { mostrar(); }
+  }
+
+  var c1 = montar(document.getElementById("c1"));
+  var c2 = montar(document.getElementById("c2"));
+  var c3 = montar(document.getElementById("c3"));
+  var liberando = false;
+
+  function loop() {
+    var r1 = atualizar(c1, ALVO_HOJE);
+    atualizar(c2, ALVO_FESTA);
+    atualizar(c3, ALVO_FESTA);
+    if (r1 <= 0 && !gate.hidden && !liberando) { liberando = true; liberar(false, true); }
+    requestAnimationFrame(loop);
+  }
+
+  if (Date.now() >= ALVO_HOJE) { liberando = true; liberar(false, false); }
+  loop();
+
+  /* ---- spoiler ---- */
+  var form = document.getElementById("form"), input = document.getElementById("answer"), msg = document.getElementById("msg");
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var txt = input.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+    if (txt.indexOf(RESPOSTA) !== -1) {
+      msg.textContent = "Acertou! Liberando o site...";
+      liberando = true;
+      setTimeout(function () { liberar(false, true); }, 500);
+    } else {
+      msg.textContent = "Não é essa. Tenta de novo!";
+      form.classList.remove("shake"); void form.offsetWidth; form.classList.add("shake");
+    }
+  });
+
+  document.getElementById("reset").addEventListener("click", function () {
+    location.reload();
+  });
+})();
+</script>
+</body>
+</html>
