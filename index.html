@@ -318,7 +318,9 @@
   // >>> LINK DO SYMPLA: cole aqui entre as aspas, ex: "https://www.sympla.com.br/evento/..."
   // Enquanto estiver vazio, os botões levam ao WhatsApp. Com o link, "Quero ir" e
   // "Garantir meu lugar" viram "Comprar ingresso" e abrem o Sympla.
-  var LINK_INGRESSO = "";
+  var LINK_INGRESSO = "https://www.sympla.com.br/evento/domiween-2026-o-hallowen-que-vai-dominar-tudo/3604827?share_id=copiarlink";
+  // >>> LINK DA LISTA (grupo do WhatsApp): usado no botão "Entrar na lista"
+  var LINK_LISTA = "https://chat.whatsapp.com/Jwayo5O8c4KLRAIYJNfZP8";
 
   // ===== PASTA DAS IMAGENS =====
   // "" = as imagens estão soltas na raiz do repositório, junto do index.html (como está agora).
@@ -407,7 +409,8 @@
   };
   document.querySelectorAll("[data-wa]").forEach(function (a) {
     var k = a.dataset.wa;
-    a.href = (LINK_INGRESSO && k !== "novo") ? LINK_INGRESSO : "https://www.sympla.com.br/evento/domiween-2026-o-hallowen-que-vai-dominar-tudo/3604827?share_id=copiarlink" + WHATSAPP + "?text=" + encodeURIComponent(msgs[k]);
+    var destino = (k === "novo") ? LINK_LISTA : LINK_INGRESSO;
+    a.href = destino || "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msgs[k]);
     a.target = "_blank"; a.rel = "noopener";
     if (LINK_INGRESSO && k !== "novo") a.textContent = "Comprar ingresso";
   });
