@@ -407,7 +407,7 @@
   };
   document.querySelectorAll("[data-wa]").forEach(function (a) {
     var k = a.dataset.wa;
-    a.href = (LINK_INGRESSO && k !== "novo") ? LINK_INGRESSO : "https://wa.me/" + WHATSAPP + "?text=" + encodeURIComponent(msgs[k]);
+    a.href = (LINK_INGRESSO && k !== "novo") ? LINK_INGRESSO : "https://www.sympla.com.br/evento/domiween-2026-o-hallowen-que-vai-dominar-tudo/3604827?share_id=copiarlink" + WHATSAPP + "?text=" + encodeURIComponent(msgs[k]);
     a.target = "_blank"; a.rel = "noopener";
     if (LINK_INGRESSO && k !== "novo") a.textContent = "Comprar ingresso";
   });
